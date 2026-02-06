@@ -1,0 +1,5 @@
+{
+  "name": "US City Neighborhood & Landmark Finder",
+  "description": "An AI-powered tool that uses Gemini with Google Search to identify neighborhoods and famous buildings across US cities, automatically syncing data to Supabase.",
+  "requestFramePermissions": []
+}

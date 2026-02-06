@@ -298,54 +298,50 @@ const App: React.FC = () => {
           />
 
           {progress.total > 0 && (
-            {
-              progress.total > 0 && (
-                <div className="mt-4 p-6 bg-white rounded-xl border border-slate-200">
-                  <div className="grid grid-cols-4 gap-4 mb-4 text-center">
-                    <div className="p-3 bg-slate-50 rounded-lg">
-                      <div className="text-2xl font-black text-slate-800">{progress.total}</div>
-                      <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Total Cities</div>
-                    </div>
-                    <div className="p-3 bg-green-50 rounded-lg">
-                      <div className="text-2xl font-black text-green-600">{progress.current - progress.errors}</div>
-                      <div className="text-[10px] font-bold text-green-700/60 uppercase tracking-widest">Completed</div>
-                    </div>
-                    <div className="p-3 bg-indigo-50 rounded-lg">
-                      <div className="text-2xl font-black text-indigo-600">{progress.total - progress.current}</div>
-                      <div className="text-[10px] font-bold text-indigo-700/60 uppercase tracking-widest">Pending</div>
-                    </div>
-                    <div className="p-3 bg-red-50 rounded-lg">
-                      <div className="text-2xl font-black text-red-600">{progress.errors}</div>
-                      <div className="text-[10px] font-bold text-red-700/60 uppercase tracking-widest">Failed</div>
-                    </div>
-                  </div>
-
-                  <div className="flex justify-between text-xs mb-2">
-                    <span className="font-bold text-slate-600">Processing Progress</span>
-                    <span className="text-slate-500">{Math.round((progress.current / progress.total) * 100)}%</span>
-                  </div>
-                  <div className="w-full bg-slate-200 rounded-full h-3 overflow-hidden">
-                    <div
-                      className="bg-indigo-600 h-3 transition-all duration-300 ease-out"
-                      style={{ width: `${(progress.current / progress.total) * 100}%` }}
-                    />
-                  </div>
-                  <div className="mt-2 text-right">
-                    <button
-                      onClick={() => {
-                        if (confirm('Are you sure? This will verify all cities against the database again.')) {
-                          localStorage.removeItem('completed_cities_map');
-                          alert('Cache cleared. You can restart the batch.');
-                        }
-                      }}
-                      className="text-[10px] text-slate-400 hover:text-red-500 underline"
-                    >
-                      Clear Local Cache (Force Re-check)
-                    </button>
-                  </div>
+            <div className="mt-4 p-6 bg-white rounded-xl border border-slate-200">
+              <div className="grid grid-cols-4 gap-4 mb-4 text-center">
+                <div className="p-3 bg-slate-50 rounded-lg">
+                  <div className="text-2xl font-black text-slate-800">{progress.total}</div>
+                  <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Total Cities</div>
                 </div>
-              )
-            }
+                <div className="p-3 bg-green-50 rounded-lg">
+                  <div className="text-2xl font-black text-green-600">{progress.current - progress.errors}</div>
+                  <div className="text-[10px] font-bold text-green-700/60 uppercase tracking-widest">Completed</div>
+                </div>
+                <div className="p-3 bg-indigo-50 rounded-lg">
+                  <div className="text-2xl font-black text-indigo-600">{progress.total - progress.current}</div>
+                  <div className="text-[10px] font-bold text-indigo-700/60 uppercase tracking-widest">Pending</div>
+                </div>
+                <div className="p-3 bg-red-50 rounded-lg">
+                  <div className="text-2xl font-black text-red-600">{progress.errors}</div>
+                  <div className="text-[10px] font-bold text-red-700/60 uppercase tracking-widest">Failed</div>
+                </div>
+              </div>
+
+              <div className="flex justify-between text-xs mb-2">
+                <span className="font-bold text-slate-600">Processing Progress</span>
+                <span className="text-slate-500">{Math.round((progress.current / progress.total) * 100)}%</span>
+              </div>
+              <div className="w-full bg-slate-200 rounded-full h-3 overflow-hidden">
+                <div
+                  className="bg-indigo-600 h-3 transition-all duration-300 ease-out"
+                  style={{ width: `${(progress.current / progress.total) * 100}%` }}
+                />
+              </div>
+              <div className="mt-2 text-right">
+                <button
+                  onClick={() => {
+                    if (confirm('Are you sure? This will verify all cities against the database again.')) {
+                      localStorage.removeItem('completed_cities_map');
+                      alert('Cache cleared. You can restart the batch.');
+                    }
+                  }}
+                  className="text-[10px] text-slate-400 hover:text-red-500 underline"
+                >
+                  Clear Local Cache (Force Re-check)
+                </button>
+              </div>
+            </div>
           )}
 
           {cities.length > 0 && (

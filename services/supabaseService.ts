@@ -100,8 +100,8 @@ export const fetchAllExistingCities = async (): Promise<Array<{ city: string, st
   const baseUrl = config.url.replace(/\/$/, "");
 
   try {
-    // Fetch all cities, limited to 20000 for now (should cover current batch)
-    const response = await fetch(`${baseUrl}/rest/v1/${tableName}?select=city,state&limit=20000`, {
+    // Fetch all cities, limited to 100000 to ensure complete coverage
+    const response = await fetch(`${baseUrl}/rest/v1/${tableName}?select=city,state&limit=100000`, {
       method: 'GET',
       headers: {
         'apikey': config.key,

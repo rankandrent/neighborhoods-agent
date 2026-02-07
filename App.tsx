@@ -111,23 +111,20 @@ const App: React.FC = () => {
   };
 
   const syncFromDb = async () => {
-    if (!confirm("This will fetch ALL already completed cities from your Database to skip them locally. Continue?")) return;
+    if (!confirm("⚠️ This will REPLACE your local cache with the exact list from the Database.\nAny 'ghost' completed items (not really in DB) will be removed so they can be re-processed.\n\nContinue?")) return;
 
     setIsProcessing(true);
     try {
       const existing = await fetchAllExistingCities();
-      const currentCache = getCachedCompleted();
-      let newCount = 0;
 
+      // Create a FRESH set from DB data only (Mirroring)
+      const freshCache = new Set<string>();
       existing.forEach(rec => {
-        if (!currentCache.has(`${rec.city}|${rec.state}`)) {
-          currentCache.add(`${rec.city}|${rec.state}`);
-          newCount++;
-        }
+        freshCache.add(`${rec.city}|${rec.state}`);
       });
 
-      localStorage.setItem('completed_cities_map', JSON.stringify(Array.from(currentCache)));
-      alert(`Synced! Added ${newCount} cities to local cache. Total cached: ${currentCache.size}. Now click 'Start Batch' to resume instantly.`);
+      localStorage.setItem('completed_cities_map', JSON.stringify(Array.from(freshCache)));
+      alert(`Sync Complete! Cache is now identical to DB.\n\nTotal in DB: ${freshCache.size}\nLocal Cache Updated.\n\nNon-existent items will now be re-processed.`);
     } catch (e) {
       alert("Error syncing from DB");
     } finally {

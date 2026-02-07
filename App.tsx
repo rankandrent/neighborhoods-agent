@@ -24,7 +24,8 @@ CREATE TABLE IF NOT EXISTS neighborhoods (
 
 const App: React.FC = () => {
   const [inputText, setInputText] = useState('');
-  const [cities, setCities] = useState<CityData[]>([]);
+  const [recentLogs, setRecentLogs] = useState<CityData[]>([]);
+  const citiesRef = useRef<CityData[]>([]);
   const [isProcessing, setIsProcessing] = useState(false);
   const [progress, setProgress] = useState({ current: 0, total: 0, skipped: 0, errors: 0 });
   const [showSettings, setShowSettings] = useState(false);
@@ -81,7 +82,7 @@ const App: React.FC = () => {
 
   const exportToCSV = () => {
     const headers = ["City", "State", "Status", "Neighborhoods", "Landmarks"];
-    const rows = cities.map(c => [
+    const rows = citiesRef.current.map(c => [
       `"${c.city}"`,
       `"${c.state}"`,
       `"${c.status}"`,
@@ -140,40 +141,34 @@ const App: React.FC = () => {
     // Check local cache first (FAST RESUME)
     const localCache = getCachedCompleted();
     if (localCache.has(`${loc.city}|${loc.state}`)) {
-      setCities(prev => {
-        const newList = [...prev];
-        if (newList[index]) {
-          newList[index].status = 'completed';
-          newList[index].error = "Skipped (Locally Cached)";
-        }
-        return newList;
-      });
+      // Update data in Ref (silent update)
+      if (citiesRef.current[index]) {
+        citiesRef.current[index].status = 'completed';
+        citiesRef.current[index].error = "Skipped (Locally Cached)";
+      }
       setProgress(p => ({ ...p, current: p.current + 1, skipped: p.skipped + 1 }));
       return;
     }
 
     try {
+      // 1. Mark as Processing (Visual Log)
+      setRecentLogs(prev => [{ ...loc, status: 'processing', neighborhoods: [], famous_buildings: [] } as CityData, ...prev].slice(0, 50));
+
       const exists = await checkIfCityExists(loc.city, loc.state);
 
       if (exists) {
         addToCache(loc.city, loc.state);
-        setCities(prev => {
-          const newList = [...prev];
-          if (newList[index]) {
-            newList[index].status = 'completed';
-            newList[index].error = "Skipped (Exists)";
-          }
-          return newList;
-        });
+        // Update Ref
+        if (citiesRef.current[index]) {
+          citiesRef.current[index].status = 'completed';
+          citiesRef.current[index].error = "Skipped (Exists)";
+        }
+
+        // Log Update
+        setRecentLogs(prev => [{ ...citiesRef.current[index] }, ...prev].slice(0, 50));
         setProgress(p => ({ ...p, current: p.current + 1, skipped: p.skipped + 1 }));
         return;
       }
-
-      setCities(prev => {
-        const newList = [...prev];
-        if (newList[index]) newList[index].status = 'processing';
-        return newList;
-      });
 
       const result = await fetchCityData(loc);
 
@@ -186,11 +181,11 @@ const App: React.FC = () => {
         status: 'completed'
       };
 
-      setCities(prev => {
-        const newList = [...prev];
-        newList[index] = completedData;
-        return newList;
-      });
+      // Update Ref
+      citiesRef.current[index] = completedData;
+
+      // Update Log
+      setRecentLogs(prev => [completedData, ...prev].slice(0, 50));
 
       await saveToSupabase(completedData);
       addToCache(loc.city, loc.state);
@@ -198,14 +193,13 @@ const App: React.FC = () => {
 
     } catch (error: any) {
       console.error(`Error processing ${loc.city}:`, error);
-      setCities(prev => {
-        const newList = [...prev];
-        if (newList[index]) {
-          newList[index].status = 'failed';
-          newList[index].error = error.message || "Error";
-        }
-        return newList;
-      });
+
+      if (citiesRef.current[index]) {
+        citiesRef.current[index].status = 'failed';
+        citiesRef.current[index].error = error.message || "Error";
+      }
+
+      setRecentLogs(prev => [{ ...citiesRef.current[index] }, ...prev].slice(0, 50));
       setProgress(p => ({ ...p, current: p.current + 1, errors: p.errors + 1 }));
     }
   };
@@ -230,7 +224,8 @@ const App: React.FC = () => {
       sources: [],
       status: 'pending'
     }));
-    setCities(initialList);
+    citiesRef.current = initialList;
+    setRecentLogs([]);
 
     const queue = [...locations.keys()];
     const workers = [];
@@ -273,7 +268,7 @@ const App: React.FC = () => {
         </div>
 
         <div className="flex items-center gap-2">
-          {cities.length > 0 && (
+          {progress.total > 0 && (
             <button
               onClick={exportToCSV}
               className="px-3 py-2 text-[11px] font-black uppercase tracking-widest text-slate-600 hover:text-indigo-600 transition-colors flex items-center gap-2"
@@ -377,11 +372,16 @@ const App: React.FC = () => {
             </div>
           )}
 
-          {cities.length > 0 && (
+          {recentLogs.length > 0 && (
             <div className="mt-6 space-y-2">
-              {cities.map((city, idx) => (
+              <div className="flex items-center gap-2 mb-2 px-2">
+                <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></div>
+                <h3 className="text-sm font-bold text-slate-500 uppercase tracking-widest">Live Activity Log (Last 50)</h3>
+              </div>
+
+              {recentLogs.map((city, idx) => (
                 <div
-                  key={idx}
+                  key={`${city.city}-${idx}`}
                   className="bg-white rounded-xl border border-slate-200 overflow-hidden"
                 >
                   <div className="p-4 flex justify-between items-center cursor-pointer hover:bg-slate-50 transition-colors"
@@ -409,7 +409,6 @@ const App: React.FC = () => {
                         }`}>
                         {city.status === 'processing' ? 'Processing...' : city.status}
                       </div>
-                      <i className="fas fa-chevron-down text-slate-400 text-sm"></i>
                     </div>
                   </div>
 

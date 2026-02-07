@@ -93,3 +93,29 @@ export const saveToSupabase = async (data: Partial<CityData>) => {
     throw error;
   }
 };
+
+export const fetchAllExistingCities = async (): Promise<Array<{ city: string, state: string }>> => {
+  const config = getSavedConfig();
+  const tableName = config.tableName;
+  const baseUrl = config.url.replace(/\/$/, "");
+
+  try {
+    // Fetch all cities, limited to 20000 for now (should cover current batch)
+    const response = await fetch(`${baseUrl}/rest/v1/${tableName}?select=city,state&limit=20000`, {
+      method: 'GET',
+      headers: {
+        'apikey': config.key,
+        'Authorization': `Bearer ${config.key}`,
+        'Content-Type': 'application/json'
+      }
+    });
+
+    if (!response.ok) return [];
+
+    const data = await response.json();
+    return data || [];
+  } catch (error) {
+    console.error("Failed to sync:", error);
+    return [];
+  }
+};

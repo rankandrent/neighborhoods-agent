@@ -2,7 +2,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { CityLocation, CityData, SupabaseConfig } from './types';
 import { fetchCityData } from './services/openRouterService';
-import { saveToSupabase, checkIfCityExists } from './services/supabaseService';
+import { saveToSupabase, checkIfCityExists, fetchAllExistingCities } from './services/supabaseService';
 
 const HARDCODED_URL = 'https://rdxgozeijdwghbbwivdy.supabase.co';
 const HARDCODED_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJkeGdvemVpamR3Z2hiYndpdmR5Iiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc2ODIyOTEzMSwiZXhwIjoyMDgzODA1MTMxfQ.IvchfZ829eEclTgI8c4BfQoyNfvvcWnd9Kxq09U-Y_o';
@@ -107,6 +107,31 @@ const App: React.FC = () => {
     const current = getCachedCompleted();
     current.add(`${city}|${state}`);
     localStorage.setItem('completed_cities_map', JSON.stringify(Array.from(current)));
+  };
+
+  const syncFromDb = async () => {
+    if (!confirm("This will fetch ALL already completed cities from your Database to skip them locally. Continue?")) return;
+
+    setIsProcessing(true);
+    try {
+      const existing = await fetchAllExistingCities();
+      const currentCache = getCachedCompleted();
+      let newCount = 0;
+
+      existing.forEach(rec => {
+        if (!currentCache.has(`${rec.city}|${rec.state}`)) {
+          currentCache.add(`${rec.city}|${rec.state}`);
+          newCount++;
+        }
+      });
+
+      localStorage.setItem('completed_cities_map', JSON.stringify(Array.from(currentCache)));
+      alert(`Synced! Added ${newCount} cities to local cache. Total cached: ${currentCache.size}. Now click 'Start Batch' to resume instantly.`);
+    } catch (e) {
+      alert("Error syncing from DB");
+    } finally {
+      setIsProcessing(false);
+    }
   };
 
   const processCity = async (loc: CityLocation, index: number) => {
@@ -275,6 +300,14 @@ const App: React.FC = () => {
           )}
 
           <div className="h-6 w-[1px] bg-slate-200 mx-2"></div>
+
+          <button
+            onClick={syncFromDb}
+            className="px-3 py-2 text-[11px] font-bold uppercase tracking-widest text-slate-500 hover:text-indigo-600 border border-slate-200 rounded-xl bg-white transition-colors"
+            title="Fetch all completed cities from DB to skip them"
+          >
+            <i className="fas fa-sync-alt mr-1"></i> Sync DB
+          </button>
 
           <button
             onClick={() => setShowSettings(true)}
